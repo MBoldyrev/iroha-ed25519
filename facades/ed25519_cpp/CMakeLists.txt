@@ -1,0 +1,63 @@
+set(include_dir "${CMAKE_SOURCE_DIR}/facades/ed25519_cpp/include")
+include_directories("${include_dir}")
+add_library(ed25519_cpp_facade INTERFACE)
+target_sources(ed25519_cpp_facade
+  INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ed25519.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/randombytes.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sha256.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/sha512.cpp
+  )
+
+ed25519_merge_libraries(ed25519_cpp ${BUILD}
+  LIBRARIES
+    ed25519_cpp_facade
+    ${EDIMPL}
+    ${HASH}
+    ${RANDOM}
+  VERSION
+    VERSION-${SOVERSION}-${EDIMPL}-${HASH}-${RANDOM}-${BUILD}-${CMAKE_BUILD_TYPE}
+  COMPILE_OPTIONS
+    ED25519_STATIC_DEFINE # hide c-ish exports from ed25519 lib
+  )
+generate_export_header(ed25519_cpp)
+
+if(BUILD STREQUAL "SHARED")
+  target_link_libraries(ed25519_cpp PRIVATE
+    "-Wl,--version-script=${CMAKE_SOURCE_DIR}/linker_exportmap_cpp"
+    )
+endif()
+
+set_target_properties(ed25519_cpp PROPERTIES
+  VERSION ${SOVERSION}
+  SOVERSION ${SOVERSION}
+  INTERFACE_ed25519_MAJOR_VERSION ${ED25519_MAJOR_VERSION}
+  )
+set_property(
+  TARGET ed25519_cpp
+  APPEND PROPERTY
+  COMPATIBLE_INTERFACE_STRING ed25519_MAJOR_VERSION
+)
+install(TARGETS ed25519_cpp EXPORT ed25519CppConfig
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  FRAMEWORK DESTINATION ${CMAKE_INSTALL_PREFIX}
+  )
+install(
+  DIRECTORY include/ed25519_cpp
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+install(FILES
+ ${CMAKE_CURRENT_BINARY_DIR}/ed25519_cpp_export.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ed25519_cpp/
+)
+install(
+  EXPORT ed25519CppConfig
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ed25519
+)
+export(
+  TARGETS ed25519_cpp
+  FILE ed25519CppConfig.cmake
+)

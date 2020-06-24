@@ -36,7 +36,7 @@ ED25519_EXPORT extern int sha512_update(sha_context *context, const unsigned cha
  * @return 0 if error, non-0 otherwise
  * @note some implementations may return bad code sometimes, some may not
  */
-ED25519_EXPORT extern int sha512_final(sha_context *context, unsigned char *out);
+__attribute__((visibility("hidden"))) int sha512_final(sha_context *context, unsigned char *out);
 
 /**
  * Inline hash calculation of sha512.

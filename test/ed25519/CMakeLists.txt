@@ -22,7 +22,7 @@ foreach(_edimpl ${ED25519_SUPPORTED_LIBRARIES_EDIMPL})
         )
 
       if(TARGET ${_hash})
-        get_target_property(_type "${_hash}" ED25519_HASH_TYPE)
+        ed25519_hash_type_get(_type "${_hash}")
         target_compile_definitions(test-${_target} PRIVATE
           -DTESTDATA_PATH=${CMAKE_CURRENT_SOURCE_DIR}/sign.input.with.${_type}.txt
           )

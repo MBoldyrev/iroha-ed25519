@@ -17,42 +17,23 @@ function(ed25519_merge_libraries TARGET LIBTYPE)
   add_library(${TARGET} ${LIBTYPE}
     ${${TARGET}_SRC}
     )
+
   ed25519_target_link_libraries(${TARGET}
     ${ARG_LIBRARIES}
     )
-  target_compile_options(${TARGET} PUBLIC
+  target_compile_definitions(${TARGET} PRIVATE
     ${ARG_COMPILE_OPTIONS}
-    -Ded25519_EXPORTS
     )
   target_include_directories(${TARGET}
+    PRIVATE
+      ${CMAKE_CURRENT_BINARY_DIR}
     INTERFACE
-    $<INSTALL_INTERFACE:include>
+      $<INSTALL_INTERFACE:include>
     )
 
-  # check that every static library has PIC enabled
   foreach (lib ${ARG_LIBRARIES})
     if (TARGET ${lib})
       add_dependencies(${TARGET} ${lib})
-      get_target_property(LIB_TYPE ${lib} TYPE)
-
-      if (LIB_TYPE STREQUAL "STATIC_LIBRARY")
-        get_target_property(PIC ${lib} POSITION_INDEPENDENT_CODE)
-        if (NOT PIC)
-          message(FATAL_ERROR
-            "Attempted to link non-PIC static library ${LIB} to shared library ${TARGET}\n"
-            "Please, use ed25519_add_library"
-            )
-        endif ()
-
-      else()
-        # it is shared library
-        if ((${CMAKE_SYSTEM_NAME} MATCHES "Linux") AND (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64"))
-          ed25519_target_link_libraries(amd64-64-24k-pic
-            "-Wl,--version-script=${CMAKE_SOURCE_DIR}/linker_exportmap"
-            )
-        endif ()
-
-      endif ()
     endif ()
   endforeach ()
 

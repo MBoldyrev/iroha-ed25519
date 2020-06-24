@@ -1,0 +1,5 @@
+{
+global:
+  _ZN13iroha_ed255192v2*;
+local: *;
+};

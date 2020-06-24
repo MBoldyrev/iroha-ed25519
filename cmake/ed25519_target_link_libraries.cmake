@@ -40,13 +40,31 @@ function(ed25519_target_link_libraries _target)
       else()
 
         get_target_property(_type "${_lib}" TYPE)
+
+        if (   _type STREQUAL "OBJECT_LIBRARY"
+            OR _type STREQUAL "INTERFACE_LIBRARY")
+          get_property(src_lib_iface_sources TARGET ${_lib} PROPERTY INTERFACE_SOURCES)
+          target_sources(${_target} PRIVATE ${src_lib_iface_sources})
+
+          get_property(src_lib_iface_include_dirs TARGET ${_lib} PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+          target_include_directories(${_target} PRIVATE ${src_lib_iface_include_dirs})
+
+          get_property(src_lib_iface_link_libs TARGET ${_lib} PROPERTY INTERFACE_LINK_LIBRARIES)
+          target_link_libraries(${_target} PRIVATE ${src_lib_iface_link_libs})
+        endif()
+
         if (_type STREQUAL "OBJECT_LIBRARY")
+          target_sources(${_target} PRIVATE $<TARGET_OBJECTS:${_lib}>)
+
+          get_property(src_lib_link_libs TARGET ${_lib} PROPERTY LINK_LIBRARIES)
+          target_link_libraries(${_target} PRIVATE ${src_lib_link_libs})
+
+          get_property(src_lib_include_dirs TARGET ${_lib} PROPERTY INCLUDE_DIRECTORIES)
+          target_include_directories(${_target} PRIVATE ${src_lib_include_dirs})
+
           # if _lib is object library, then add it to sources
           target_sources(${_target} PRIVATE
             $<TARGET_OBJECTS:${_lib}>
-            )
-          _link_ed25519_dependencies(${_target}
-            ${_lib}
             )
         elseif(_type STREQUAL "SHARED_LIBRARY" OR _type STREQUAL "STATIC_LIBRARY")
           _link_ed25519_dependencies(${_target}
@@ -55,8 +73,6 @@ function(ed25519_target_link_libraries _target)
           target_link_libraries(${_target} PRIVATE
             ${_lib}
             )
-        else()
-          message(FATAL_ERROR "Library ${_lib} is neither linker flag, nor library")
         endif()
       endif()
     endforeach()

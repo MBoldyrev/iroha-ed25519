@@ -1,17 +1,19 @@
-set(is_supported FALSE)
-if(WIN32 OR MSVC OR MSYS OR MINGW)
-  find_library(BCRYPT_LIB bcrypt)
-  if(BCRYPT_LIB)
-    set(is_supported TRUE)
-    message(STATUS "Found bcrypt library: ${BCRYPT_LIB}")
-  endif()
+if(NOT (WIN32 OR MSVC OR MSYS OR MINGW))
+  return()
 endif()
 
-ed25519_add_library(bcryptgen RANDOM
-  SOURCES
-    randombytes.c
-  LINK_LIBRARIES
-    ${BCRYPT_LIB}
-  IS_SUPPORTED
-    ${is_supported}
+find_library(BCRYPT_LIB bcrypt)
+if(NOT BCRYPT_LIB)
+  return()
+endif()
+
+message(STATUS "Found bcrypt library: ${BCRYPT_LIB}")
+
+add_library(bcryptgen OBJECT)
+target_sources(bcryptgen
+  INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/randombytes.c
   )
+target_link_libraries(bcryptgen ${BCRYPT_LIB})
+
+ed25519_add_library(bcryptgen RANDOM)

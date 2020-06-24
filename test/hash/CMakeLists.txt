@@ -8,7 +8,7 @@ foreach (_hash ${ED25519_SUPPORTED_LIBRARIES_HASH})
     )
 
   if (TARGET ${_hash})
-    get_target_property(_type "${_hash}" ED25519_HASH_TYPE)
+    ed25519_hash_type_get(_type "${_hash}")
     target_compile_options(${_target} PUBLIC
       -DTESTDATA_PATH=${CMAKE_CURRENT_SOURCE_DIR}/${_type}.input.txt
       )

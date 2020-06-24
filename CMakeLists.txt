@@ -29,8 +29,6 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(NOT EXISTS "${CMAKE_TOOLCHAIN_FILE}")
-  set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-
   set(CMAKE_C_STANDARD 11)    # force std=c11
   set(CMAKE_C_STANDARD_REQUIRED ON)
   set(CMAKE_C_EXTENSIONS OFF)
@@ -50,37 +48,33 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/include/
 )
 
+include(GenerateExportHeader)
 include(GNUInstallDirs)
 include(cmake/dependencies.cmake)
 include(cmake/functions.cmake)
-include(cmake/ed25519_init.cmake)
 include(cmake/ed25519_target_link_libraries.cmake)
 include(cmake/ed25519_add_library.cmake)
 include(cmake/ed25519_merge_libraries.cmake)
 include(cmake/ed25519_add_test.cmake)
 include(cmake/ed25519_add_fuzz.cmake)
 include(cmake/ed25519_select_supported_impl.cmake)
+include(cmake/ed25519_hash_type.cmake)
 test_build_amd64(CAN_BUILD_AMD64)
 
-ed25519_init(EDIMPL HASH RANDOM)
+if (NOT BUILD)
+  set(BUILD "STATIC")
+endif ()
+if(BUILD STREQUAL "SHARED")
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
 
 add_subdirectory(lib)
 
 ## DEFAULTS
-if (NOT EDIMPL)
-  ed25519_select_supported_impl(EDIMPL amd64-64-24k-pic ref10)
-endif ()
-if (NOT HASH)
-  ed25519_select_supported_impl(HASH sha2_sphlib sha2_openssl)
-endif ()
-if (NOT RANDOM)
-  # https://sockpuppet.org/blog/2014/02/25/safely-generate-random-numbers/
-  ed25519_select_supported_impl(RANDOM dev_urandom bcryptgen rand_openssl)
-endif ()
-if (NOT BUILD)
-  set(BUILD "STATIC")
-endif ()
-
+ed25519_select_supported_impl(EDIMPL amd64-64-24k-pic ref10)
+ed25519_select_supported_impl(HASH sha2_sphlib sha2_openssl)
+# https://sockpuppet.org/blog/2014/02/25/safely-generate-random-numbers/
+ed25519_select_supported_impl(RANDOM dev_urandom bcryptgen rand_openssl)
 
 if (NOT CMAKE_ASM_COMPILER_WORKS)
   message(WARNING "Can not find ASM compiler. Only EDIMPL=ref10 is available.")
@@ -109,15 +103,24 @@ ENUM(BUILD "${BUILD}" "library build type"
   STATIC
   )
 
-
 ed25519_merge_libraries(ed25519 ${BUILD}
   LIBRARIES
-  ${EDIMPL}
-  ${HASH}
-  ${RANDOM}
+    ${EDIMPL}
+    ${HASH}
+    ${RANDOM}
   VERSION
-  VERSION-${SOVERSION}-${EDIMPL}-${HASH}-${RANDOM}-${BUILD}-${CMAKE_BUILD_TYPE}
+    VERSION-${SOVERSION}-${EDIMPL}-${HASH}-${RANDOM}-${BUILD}-${CMAKE_BUILD_TYPE}
   )
+generate_export_header(ed25519)
+
+if(BUILD STREQUAL "SHARED")
+  target_link_libraries(ed25519 PRIVATE
+    "-Wl,--version-script=${CMAKE_SOURCE_DIR}/linker_exportmap"
+    )
+endif()
+
+add_subdirectory(facades/ed25519_cpp)
+
 set_target_properties(ed25519 PROPERTIES
   VERSION ${SOVERSION}
   SOVERSION ${SOVERSION}
@@ -139,6 +142,9 @@ install(TARGETS ed25519 EXPORT ed25519Config
 install(
   DIRECTORY ${CMAKE_SOURCE_DIR}/include/ed25519
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+install(FILES
+ ${PROJECT_BINARY_DIR}/ed25519_export.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ed25519/ed25519/
 )
 install(
   EXPORT ed25519Config

@@ -1,5 +1,5 @@
-#ifndef PROJECT_ED25519_HPP_
-#define PROJECT_ED25519_HPP_
+#ifndef PROJECT_ED25519_H_
+#define PROJECT_ED25519_H_
 
 #if defined(__cplusplus)
 extern "C" {
@@ -73,4 +73,4 @@ ED25519_EXPORT int ed25519_verify(const signature_t* sig, const unsigned char* m
 }
 #endif
 
-#endif  //  PROJECT_ED25519_HPP_
+#endif  //  PROJECT_ED25519_H_
